@@ -1,0 +1,88 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --bg-canvas: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-elevated: #f1f5f9;
+  --border-subtle: #e2e8f0;
+  --text-ink: #111827;
+  --text-muted: #475569;
+  --brand: #b8f34b;
+  --brand-ink: #0b0f14;
+  --brand-text: #3f6212;
+  --success: #16a34a;
+  --warning: #d97706;
+  --danger: #dc2626;
+  --radius-card: 0.75rem;
+  --radius-control: 0.5rem;
+}
+
+.dark {
+  --bg-canvas: #0b0f14;
+  --bg-surface: #151b23;
+  --bg-elevated: #1c242f;
+  --border-subtle: #27313d;
+  --text-ink: #f8fafc;
+  --text-muted: #94a3b8;
+  --brand: #b8f34b;
+  --brand-ink: #0b0f14;
+  --brand-text: #b8f34b;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+}
+
+@theme inline {
+  --color-canvas: var(--bg-canvas);
+  --color-surface: var(--bg-surface);
+  --color-elevated: var(--bg-elevated);
+  --color-line: var(--border-subtle);
+  --color-ink: var(--text-ink);
+  --color-muted: var(--text-muted);
+  --color-brand: var(--brand);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-text: var(--brand-text);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+
+  --font-display: "Barlow Condensed", system-ui, sans-serif;
+  --font-sans: "Barlow", system-ui, -apple-system, sans-serif;
+  --font-mono: "Fira Code", ui-monospace, monospace;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    scroll-behavior: smooth;
+    background-color: var(--bg-canvas);
+    color: var(--text-ink);
+  }
+
+  h1,
+  h2,
+  h3,
+  .font-display {
+    font-family: var(--font-display);
+    letter-spacing: -0.015em;
+  }
+
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

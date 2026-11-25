@@ -1,0 +1,43 @@
+name: fitcoach
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: fitcoach_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: fitcoach_user
+      POSTGRES_PASSWORD: fitcoach_secure_password_2026
+      POSTGRES_DB: fitcoach_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fitcoach_user -d fitcoach_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: fitcoach_backend
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      FRONTEND_URL: http://localhost:5173
+      DATABASE_URL: postgresql://fitcoach_user:fitcoach_secure_password_2026@postgres:5432/fitcoach_db?sslmode=disable
+      JWT_SECRET: super_secret_production_key_fitcoach_minimum_32_chars
+      JWT_EXPIRES_IN: 7d
+      COOKIE_NAME: fitcoach_session
+    ports:
+      - "4000:4000"
+
+volumes:
+  pgdata:

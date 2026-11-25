@@ -1,0 +1,31 @@
+# Dependencias
+node_modules/
+
+# Compilación
+dist/
+
+# Variables de entorno y secretos (NUNCA SUBIR A GIT)
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Backups y dumps locales de base de datos
+*.sqlite
+*.sqlite3
+*.db
+*.dump
+*.sql.gz
+*.backup
+
+# Sistema operativo y editores
+.DS_Store
+Thumbs.db
+.vscode/
+!.vscode/extensions.json
+.idea/
