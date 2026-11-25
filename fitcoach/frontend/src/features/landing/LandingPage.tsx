@@ -122,7 +122,6 @@ export function LandingPage() {
   const trainerData = publicQuery.data?.trainer
 
   const activeBrandName = site?.brandName || BRAND_CONFIG.brandName
-  const activeTagline = site?.tagline || BRAND_CONFIG.tagline
   const activeWhatsapp = site?.whatsapp || BRAND_CONFIG.whatsappNumber
   const activeEmail = site?.email || BRAND_CONFIG.email
   const activeLocation = site?.location || BRAND_CONFIG.location
@@ -242,7 +241,7 @@ export function LandingPage() {
       <header className="sticky top-0 z-40 border-b border-line bg-canvas/90 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <a href="#inicio" className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand rounded-lg">
-            <BrandLogo brandName={activeBrandName} tagline={activeTagline} />
+            <BrandLogo />
           </a>
 
           <nav aria-label="Navegación principal" className="hidden items-center gap-6 lg:flex">
@@ -775,9 +774,9 @@ export function LandingPage() {
 
       <footer className="border-t border-line bg-surface py-8">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 text-sm text-muted sm:flex-row sm:px-6 lg:px-8">
-          <BrandLogo brandName={activeBrandName} tagline={activeTagline} />
+          <BrandLogo />
           <p>
-            © {CURRENT_YEAR} {activeBrandName} · {activeLocation}
+            © {CURRENT_YEAR} {BRAND_CONFIG.brandName} · {activeLocation}
           </p>
         </div>
       </footer>

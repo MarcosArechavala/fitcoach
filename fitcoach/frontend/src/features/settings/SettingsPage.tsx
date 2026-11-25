@@ -423,21 +423,12 @@ export function SettingsPage() {
             <CardTitle>Marca, Portada y Contacto</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1">
-                <Label>Nombre de marca</Label>
-                <Input
-                  value={siteForm.brandName}
-                  onChange={(e) => setSiteForm({ ...siteForm, brandName: e.target.value })}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label>Subtítulo corto (Tagline)</Label>
-                <Input
-                  value={siteForm.tagline}
-                  onChange={(e) => setSiteForm({ ...siteForm, tagline: e.target.value })}
-                />
-              </div>
+            <div className="space-y-1">
+              <Label>Subtítulo corto (Tagline)</Label>
+              <Input
+                value={siteForm.tagline}
+                onChange={(e) => setSiteForm({ ...siteForm, tagline: e.target.value })}
+              />
             </div>
 
             <div className="grid gap-3 sm:grid-cols-3">
