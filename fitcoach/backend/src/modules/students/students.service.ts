@@ -1,6 +1,7 @@
 import type { Prisma } from '@prisma/client'
 import { env } from '../../config/env.js'
 import { prisma } from '../../config/prisma.js'
+import { sendInvitationEmail } from '../../utils/email.js'
 import { AppError } from '../../utils/errors.js'
 import { generateRandomToken } from '../../utils/tokens.js'
 
@@ -169,9 +170,12 @@ export async function createStudent(input: {
     })
   })
 
+  const invitationUrl = `${env.FRONTEND_URL}/invitacion?token=${rawToken}`
+  void sendInvitationEmail(input.email, input.firstName, invitationUrl)
+
   return {
     student: serializeStudent(created),
-    invitationUrl: `${env.FRONTEND_URL}/invitacion?token=${rawToken}`,
+    invitationUrl,
   }
 }
 
@@ -299,7 +303,11 @@ export async function restoreStudent(studentId: string) {
 export async function regenerateInvitation(studentId: string) {
   const student = await prisma.studentProfile.findUnique({
     where: { id: studentId },
-    select: { userId: true },
+    select: {
+      userId: true,
+      firstName: true,
+      user: { select: { email: true } },
+    },
   })
 
   if (!student) {
@@ -317,8 +325,11 @@ export async function regenerateInvitation(studentId: string) {
     },
   })
 
+  const invitationUrl = `${env.FRONTEND_URL}/invitacion?token=${rawToken}`
+  void sendInvitationEmail(student.user.email, student.firstName, invitationUrl)
+
   return {
-    invitationUrl: `${env.FRONTEND_URL}/invitacion?token=${rawToken}`,
+    invitationUrl,
   }
 }
 

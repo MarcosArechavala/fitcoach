@@ -1,4 +1,5 @@
 import { prisma } from '../../config/prisma.js'
+import { sendNewLeadEmail } from '../../utils/email.js'
 import { AppError } from '../../utils/errors.js'
 
 export async function createLead(input: {
@@ -8,7 +9,7 @@ export async function createLead(input: {
   goal: string
   message: string
 }) {
-  return prisma.contactLead.create({
+  const lead = await prisma.contactLead.create({
     data: {
       name: input.name,
       email: input.email,
@@ -18,6 +19,26 @@ export async function createLead(input: {
       status: 'NEW',
     },
   })
+
+  // Notificar al entrenador por email en segundo plano
+  void (async () => {
+    const [trainer, settings] = await Promise.all([
+      prisma.user.findFirst({
+        where: { role: 'TRAINER', isActive: true, deletedAt: null },
+        select: { email: true },
+      }),
+      prisma.siteSettings.findUnique({
+        where: { id: 'default' },
+        select: { email: true },
+      }),
+    ])
+    const notifyEmail = trainer?.email ?? settings?.email
+    if (notifyEmail) {
+      await sendNewLeadEmail(notifyEmail, input)
+    }
+  })()
+
+  return lead
 }
 
 export async function listLeads(status?: 'NEW' | 'CONTACTED' | 'CONVERTED' | 'DISCARDED') {

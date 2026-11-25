@@ -24,6 +24,8 @@ const envSchema = z.object({
     .min(16, 'JWT_SECRET debe tener al menos 16 caracteres'),
   JWT_EXPIRES_IN: z.string().default('7d'),
   COOKIE_NAME: z.string().default('fitcoach_session'),
+  RESEND_API_KEY: z.string().optional(),
+  EMAIL_FROM: z.string().default('FITCOACH <onboarding@resend.dev>'),
 })
 
 const parsed = envSchema.safeParse(process.env)

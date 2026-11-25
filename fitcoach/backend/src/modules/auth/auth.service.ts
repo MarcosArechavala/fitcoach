@@ -1,5 +1,7 @@
 import bcrypt from 'bcryptjs'
+import { env } from '../../config/env.js'
 import { prisma } from '../../config/prisma.js'
+import { sendPasswordResetEmail } from '../../utils/email.js'
 import { AppError } from '../../utils/errors.js'
 import {
   generateRandomToken,
@@ -156,8 +158,9 @@ export async function requestPasswordReset(email: string) {
     },
   })
 
-  // En Fase 6 se integrará el envío por email transaccional.
-  // Nunca logueamos el rawToken ni lo devolvemos en producción.
+  const resetUrl = `${env.FRONTEND_URL}/recuperar-password?token=${rawToken}`
+  void sendPasswordResetEmail(email, resetUrl)
+
   return {
     sent: true,
     devResetToken:

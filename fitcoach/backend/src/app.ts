@@ -9,6 +9,7 @@ import { appointmentsRouter } from './modules/appointments/appointments.routes.j
 import { authRouter } from './modules/auth/auth.routes.js'
 import { exercisesRouter } from './modules/exercises/exercises.routes.js'
 import { leadsRouter } from './modules/leads/leads.routes.js'
+import { notificationsRouter } from './modules/notifications/notifications.routes.js'
 import { paymentsRouter } from './modules/payments/payments.routes.js'
 import { progressRouter } from './modules/progress/progress.routes.js'
 import { settingsRouter } from './modules/settings/settings.routes.js'
@@ -72,6 +73,7 @@ export function createApp() {
   app.use('/api/appointments', appointmentsRouter)
   app.use('/api/payments', paymentsRouter)
   app.use('/api/leads', leadsRouter)
+  app.use('/api/notifications', notificationsRouter)
   app.use('/api/settings', settingsRouter)
 
   app.use((_req, res) => {
