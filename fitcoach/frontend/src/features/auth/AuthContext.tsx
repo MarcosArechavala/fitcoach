@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { LoadingSkeleton } from '@/components/shared/States'
-import { apiRequest } from '@/lib/api'
+import { apiRequest, setStoredToken } from '@/lib/api'
 
 export interface AuthUser {
   id: string
@@ -42,6 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = React.useCallback(async () => {
     await apiRequest('/auth/logout', { method: 'POST' }).catch(() => null)
+    setStoredToken(null)
     setUser(null)
   }, [])
 

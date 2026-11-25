@@ -32,7 +32,7 @@ function setSessionCookie(res: import('express').Response, token: string) {
   res.cookie(env.COOKIE_NAME, token, {
     httpOnly: true,
     secure: env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax',
     maxAge: 7 * 24 * 60 * 60 * 1000,
     path: '/',
   })
@@ -46,7 +46,7 @@ authRouter.post(
     const { email, password } = req.body
     const { token, user } = await authService.loginWithEmail(email, password)
     setSessionCookie(res, token)
-    res.json({ user })
+    res.json({ user, token })
   }),
 )
 
@@ -56,7 +56,7 @@ authRouter.post(
     res.clearCookie(env.COOKIE_NAME, {
       httpOnly: true,
       secure: env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax',
       path: '/',
     })
     res.json({ ok: true })
@@ -80,7 +80,7 @@ authRouter.post(
     const { token: rawToken, password } = req.body
     const { token, user } = await authService.acceptInvitation(rawToken, password)
     setSessionCookie(res, token)
-    res.json({ user })
+    res.json({ user, token })
   }),
 )
 

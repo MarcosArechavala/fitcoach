@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { apiRequest, ApiError } from '@/lib/api'
+import { apiRequest, ApiError, setStoredToken } from '@/lib/api'
 import { useAuth, type AuthUser } from './AuthContext'
 
 const loginSchema = z.object({
@@ -33,10 +33,13 @@ export function LoginPage() {
 
   const onSubmit = async (values: LoginFormValues) => {
     try {
-      const data = await apiRequest<{ user: AuthUser }>('/auth/login', {
+      const data = await apiRequest<{ user: AuthUser; token?: string }>('/auth/login', {
         method: 'POST',
         body: JSON.stringify(values),
       })
+      if (data.token) {
+        setStoredToken(data.token)
+      }
       setUser(data.user)
       toast.success(`Bienvenido, ${data.user.fullName}`)
       navigate(data.user.role === 'TRAINER' ? '/trainer' : '/portal', {

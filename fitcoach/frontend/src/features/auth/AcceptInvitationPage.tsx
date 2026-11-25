@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { apiRequest, ApiError } from '@/lib/api'
+import { apiRequest, ApiError, setStoredToken } from '@/lib/api'
 import { useAuth, type AuthUser } from './AuthContext'
 
 const inviteSchema = z
@@ -44,10 +44,13 @@ export function AcceptInvitationPage() {
       return
     }
     try {
-      const data = await apiRequest<{ user: AuthUser }>('/auth/accept-invitation', {
+      const data = await apiRequest<{ user: AuthUser; token?: string }>('/auth/accept-invitation', {
         method: 'POST',
         body: JSON.stringify({ token, password: values.password }),
       })
+      if (data.token) {
+        setStoredToken(data.token)
+      }
       setUser(data.user)
       toast.success('¡Cuenta activada! Bienvenido a FITCOACH.')
       navigate('/portal', { replace: true })

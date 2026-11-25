@@ -18,7 +18,12 @@ export async function requireAuth(
   _res: Response,
   next: NextFunction,
 ) {
-  const token = req.cookies?.[env.COOKIE_NAME] as string | undefined
+  const authHeader = req.headers.authorization
+  const bearerToken = authHeader?.startsWith('Bearer ')
+    ? authHeader.slice(7).trim()
+    : undefined
+  const token = (req.cookies?.[env.COOKIE_NAME] as string | undefined) || bearerToken
+
   if (!token) {
     return next(new AppError('Sesión no iniciada', 401, 'UNAUTHORIZED'))
   }
