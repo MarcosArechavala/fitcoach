@@ -1,8 +1,6 @@
 import * as React from 'react'
-import { useQuery } from '@tanstack/react-query'
 import { NavLink, Outlet, Link, useNavigate } from 'react-router-dom'
 import {
-  Bell,
   Calendar,
   ChevronLeft,
   ChevronRight,
@@ -15,7 +13,6 @@ import {
   Menu,
   MessageSquare,
   Moon,
-  RefreshCw,
   Search,
   Settings,
   Sun,
@@ -23,23 +20,13 @@ import {
   X,
 } from 'lucide-react'
 import { BrandLogo } from '@/components/shared/BrandLogo'
+import { NotificationBell } from '@/components/shared/NotificationBell'
 import { useTheme } from '@/components/shared/ThemeProvider'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAuth } from '@/features/auth/AuthContext'
-import { apiRequest } from '@/lib/api'
 import { BRAND_CONFIG } from '@/lib/brand.config'
 import { cn } from '@/lib/utils'
-
-interface TrainerNotificationItem {
-  id: string
-  type: 'LEAD' | 'PAYMENT' | 'WORKOUT' | 'APPOINTMENT'
-  severity: 'info' | 'warning' | 'urgent'
-  title: string
-  description: string
-  createdAt: string
-  href: string
-}
 
 interface NavItem {
   to: string
@@ -80,29 +67,6 @@ export function TrainerLayout() {
   const navigate = useNavigate()
   const [collapsed, setCollapsed] = React.useState(false)
   const [mobileOpen, setMobileOpen] = React.useState(false)
-  const [notifOpen, setNotifOpen] = React.useState(false)
-  const notifRef = React.useRef<HTMLDivElement>(null)
-
-  const notifQuery = useQuery({
-    queryKey: ['trainer-notifications'],
-    queryFn: () =>
-      apiRequest<{ items: TrainerNotificationItem[]; unreadCount: number }>(
-        '/notifications',
-      ),
-    refetchInterval: 60_000,
-  })
-
-  React.useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
-        setNotifOpen(false)
-      }
-    }
-    if (notifOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [notifOpen])
 
   const handleLogout = async () => {
     await logout()
@@ -254,93 +218,7 @@ export function TrainerLayout() {
             >
               {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
-            <div className="relative" ref={notifRef}>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Notificaciones"
-                onClick={() => setNotifOpen((o) => !o)}
-                className="relative"
-              >
-                <Bell className="h-4 w-4" />
-                {(notifQuery.data?.unreadCount ?? 0) > 0 && (
-                  <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand px-1 text-[10px] font-bold text-brand-ink">
-                    {notifQuery.data!.unreadCount > 9 ? '9+' : notifQuery.data!.unreadCount}
-                  </span>
-                )}
-              </Button>
-
-              {notifOpen && (
-                <div className="absolute right-0 mt-2 w-80 overflow-hidden rounded-xl border border-line bg-surface shadow-xl sm:w-96">
-                  <div className="flex items-center justify-between border-b border-line px-4 py-3">
-                    <div>
-                      <p className="text-sm font-semibold text-ink">Notificaciones</p>
-                      <p className="text-[11px] text-muted">
-                        Alertas en tiempo real de tu gimnasio
-                      </p>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() => void notifQuery.refetch()}
-                      aria-label="Actualizar notificaciones"
-                      title="Actualizar"
-                    >
-                      <RefreshCw
-                        className={cn(
-                          'h-3.5 w-3.5',
-                          notifQuery.isFetching && 'animate-spin',
-                        )}
-                      />
-                    </Button>
-                  </div>
-
-                  <div className="max-h-80 overflow-y-auto divide-y divide-line">
-                    {notifQuery.isLoading ? (
-                      <div className="p-4 text-center text-xs text-muted">
-                        Cargando alertas...
-                      </div>
-                    ) : !notifQuery.data?.items.length ? (
-                      <div className="p-6 text-center text-xs text-muted">
-                        ¡Todo al día! No tenés alertas pendientes.
-                      </div>
-                    ) : (
-                      notifQuery.data.items.map((item) => (
-                        <button
-                          key={item.id}
-                          type="button"
-                          onClick={() => {
-                            setNotifOpen(false)
-                            navigate(item.href)
-                          }}
-                          className="flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-elevated"
-                        >
-                          <span
-                            className={cn(
-                              'mt-1.5 h-2 w-2 shrink-0 rounded-full',
-                              item.severity === 'urgent'
-                                ? 'bg-danger'
-                                : item.severity === 'warning'
-                                  ? 'bg-amber-400'
-                                  : 'bg-brand',
-                            )}
-                          />
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-xs font-semibold text-ink">
-                              {item.title}
-                            </p>
-                            <p className="mt-0.5 truncate text-[11px] text-muted">
-                              {item.description}
-                            </p>
-                          </div>
-                        </button>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
+            <NotificationBell />
             <div className="flex items-center gap-2.5 border-l border-line pl-3">
               <img
                 src="/images/coach-portrait.jpg"

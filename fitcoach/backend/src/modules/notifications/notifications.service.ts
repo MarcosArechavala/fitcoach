@@ -139,3 +139,109 @@ export async function getTrainerNotifications(): Promise<{
     unreadCount: items.length,
   }
 }
+
+export async function getStudentNotifications(studentId: string): Promise<{
+  items: TrainerNotificationItem[]
+  unreadCount: number
+}> {
+  const now = new Date()
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+  const sevenDaysAhead = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
+  const fiveDaysAhead = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000)
+  const startOfDay = new Date(now)
+  startOfDay.setHours(0, 0, 0, 0)
+
+  const [recentAssignments, upcomingAppointments, duePayments] =
+    await Promise.all([
+      prisma.workoutAssignment.findMany({
+        where: {
+          studentId,
+          isActive: true,
+          createdAt: { gte: sevenDaysAgo },
+        },
+        include: { template: { select: { name: true } } },
+        orderBy: { createdAt: 'desc' },
+        take: 3,
+      }),
+      prisma.appointment.findMany({
+        where: {
+          studentId,
+          scheduledAt: { gte: startOfDay, lte: sevenDaysAhead },
+          status: { in: ['SCHEDULED', 'CONFIRMED'] },
+        },
+        orderBy: { scheduledAt: 'asc' },
+        take: 3,
+      }),
+      prisma.payment.findMany({
+        where: {
+          studentId,
+          status: { in: ['OVERDUE', 'PENDING'] },
+          dueDate: { lte: fiveDaysAhead },
+        },
+        orderBy: { dueDate: 'asc' },
+        take: 3,
+      }),
+    ])
+
+  const items: TrainerNotificationItem[] = []
+
+  for (const assignment of recentAssignments) {
+    items.push({
+      id: `assignment-${assignment.id}`,
+      type: 'WORKOUT',
+      severity: 'info',
+      title: 'Nueva rutina asignada',
+      description: assignment.template.name,
+      createdAt: assignment.createdAt.toISOString(),
+      href: '/portal/rutina',
+    })
+  }
+
+  for (const appt of upcomingAppointments) {
+    const dateStr = appt.scheduledAt.toLocaleDateString('es-AR', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      timeZone: 'America/Argentina/Buenos_Aires',
+    })
+    const timeStr = appt.scheduledAt.toLocaleTimeString('es-AR', {
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'America/Argentina/Buenos_Aires',
+    })
+    items.push({
+      id: `student-appt-${appt.id}`,
+      type: 'APPOINTMENT',
+      severity: 'info',
+      title: `Próxima sesión: ${dateStr} ${timeStr} hs`,
+      description: appt.title,
+      createdAt: appt.scheduledAt.toISOString(),
+      href: '/portal/sesiones',
+    })
+  }
+
+  for (const payment of duePayments) {
+    const isOverdue =
+      payment.status === 'OVERDUE' || payment.dueDate.getTime() < startOfDay.getTime()
+    items.push({
+      id: `student-payment-${payment.id}`,
+      type: 'PAYMENT',
+      severity: isOverdue ? 'urgent' : 'warning',
+      title: isOverdue ? 'Tenés una cuota vencida' : 'Cuota próxima a vencer',
+      description: `Importe: $${payment.amountArs.toLocaleString('es-AR')} ARS`,
+      createdAt: payment.dueDate.toISOString(),
+      href: '/portal/perfil',
+    })
+  }
+
+  items.sort((a, b) => {
+    if (a.severity === 'urgent' && b.severity !== 'urgent') return -1
+    if (b.severity === 'urgent' && a.severity !== 'urgent') return 1
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  })
+
+  return {
+    items,
+    unreadCount: items.length,
+  }
+}

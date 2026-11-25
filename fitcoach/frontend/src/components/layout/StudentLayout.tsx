@@ -9,6 +9,7 @@ import {
   User,
 } from 'lucide-react'
 import { BrandLogo } from '@/components/shared/BrandLogo'
+import { NotificationBell } from '@/components/shared/NotificationBell'
 import { useTheme } from '@/components/shared/ThemeProvider'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -41,6 +42,7 @@ export function StudentLayout() {
             >
               {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
+            <NotificationBell />
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand font-display text-sm font-bold text-brand-ink">
               LF
             </div>
