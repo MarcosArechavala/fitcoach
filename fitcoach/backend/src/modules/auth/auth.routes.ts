@@ -4,6 +4,7 @@ import { env } from '../../config/env.js'
 import { requireAuth } from '../../middlewares/auth.js'
 import { validate } from '../../middlewares/validate.js'
 import { asyncHandler } from '../../utils/errors.js'
+import { verifySessionToken } from '../../utils/tokens.js'
 import {
   acceptInvitationSchema,
   changePasswordSchema,
@@ -65,10 +66,25 @@ authRouter.post(
 
 authRouter.get(
   '/me',
-  requireAuth,
   asyncHandler(async (req, res) => {
-    const user = await authService.getAuthenticatedUser(req.auth!.sub)
-    res.json({ user })
+    const authHeader = req.headers.authorization
+    const bearerToken = authHeader?.startsWith('Bearer ')
+      ? authHeader.slice(7).trim()
+      : undefined
+    const token = (req.cookies?.[env.COOKIE_NAME] as string | undefined) || bearerToken
+
+    if (!token) {
+      res.json({ user: null })
+      return
+    }
+
+    try {
+      const payload = verifySessionToken(token)
+      const user = await authService.getAuthenticatedUser(payload.sub)
+      res.json({ user })
+    } catch {
+      res.json({ user: null })
+    }
   }),
 )
 
