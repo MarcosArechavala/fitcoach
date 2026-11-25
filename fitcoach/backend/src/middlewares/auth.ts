@@ -39,7 +39,8 @@ export async function requireAuth(
       select: {
         id: true,
         role: true,
-        studentProfile: { select: { id: true } },
+        trainerProfile: { select: { id: true } },
+        studentProfile: { select: { id: true, trainerId: true } },
       },
     })
 
@@ -50,6 +51,8 @@ export async function requireAuth(
     req.auth = {
       sub: user.id,
       role: user.role,
+      trainerId:
+        user.trainerProfile?.id ?? user.studentProfile?.trainerId ?? undefined,
       studentId: user.studentProfile?.id,
     }
     return next()

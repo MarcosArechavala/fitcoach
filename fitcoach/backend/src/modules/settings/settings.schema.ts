@@ -12,6 +12,14 @@ export const updateSiteSettingsSchema = z.object({
 })
 
 export const updateTrainerProfileSchema = z.object({
+  slug: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .min(3)
+    .max(40)
+    .regex(/^[a-z0-9-]+$/, 'Solo letras minúsculas, números y guiones')
+    .optional(),
   firstName: z.string().min(2).optional(),
   lastName: z.string().min(2).optional(),
   headline: z.string().optional().nullable(),

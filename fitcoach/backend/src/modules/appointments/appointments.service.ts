@@ -2,6 +2,7 @@ import { prisma } from '../../config/prisma.js'
 import { AppError } from '../../utils/errors.js'
 
 async function assertNoTimeConflict(
+  trainerId: string,
   start: Date,
   durationMinutes: number,
   excludeId?: string,
@@ -14,6 +15,7 @@ async function assertNoTimeConflict(
 
   const candidates = await prisma.appointment.findMany({
     where: {
+      trainerId,
       ...(excludeId ? { id: { not: excludeId } } : {}),
       status: { notIn: ['CANCELLED'] },
       scheduledAt: { gte: dayStart, lte: dayEnd },
@@ -39,13 +41,17 @@ async function assertNoTimeConflict(
   }
 }
 
-export async function listAppointments(filters: {
-  from?: string
-  to?: string
-  status?: 'SCHEDULED' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | 'RESCHEDULED'
-}) {
+export async function listAppointments(
+  trainerId: string,
+  filters: {
+    from?: string
+    to?: string
+    status?: 'SCHEDULED' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | 'RESCHEDULED'
+  },
+) {
   return prisma.appointment.findMany({
     where: {
+      trainerId,
       ...(filters.status ? { status: filters.status } : {}),
       ...(filters.from || filters.to
         ? {
@@ -73,23 +79,27 @@ export async function listStudentAppointments(studentId: string) {
   })
 }
 
-export async function createAppointment(input: {
-  studentId: string
-  title: string
-  modality: 'ONLINE' | 'IN_PERSON' | 'HYBRID'
-  scheduledAt: string
-  durationMinutes: number
-  notes?: string | null
-}) {
+export async function createAppointment(
+  trainerId: string,
+  input: {
+    studentId: string
+    title: string
+    modality: 'ONLINE' | 'IN_PERSON' | 'HYBRID'
+    scheduledAt: string
+    durationMinutes: number
+    notes?: string | null
+  },
+) {
   const start = new Date(input.scheduledAt)
   if (Number.isNaN(start.getTime())) {
     throw new AppError('Fecha u hora inválida', 400, 'INVALID_DATE')
   }
 
-  await assertNoTimeConflict(start, input.durationMinutes)
+  await assertNoTimeConflict(trainerId, start, input.durationMinutes)
 
   return prisma.appointment.create({
     data: {
+      trainerId,
       studentId: input.studentId,
       title: input.title,
       modality: input.modality,
@@ -105,6 +115,7 @@ export async function createAppointment(input: {
 }
 
 export async function updateAppointment(
+  trainerId: string,
   id: string,
   input: {
     title?: string
@@ -115,7 +126,7 @@ export async function updateAppointment(
     notes?: string | null
   },
 ) {
-  const existing = await prisma.appointment.findUnique({ where: { id } })
+  const existing = await prisma.appointment.findFirst({ where: { id, trainerId } })
   if (!existing) {
     throw new AppError('Sesión no encontrada', 404, 'NOT_FOUND')
   }
@@ -125,7 +136,7 @@ export async function updateAppointment(
   const nextStatus = input.status ?? existing.status
 
   if (nextStatus !== 'CANCELLED' && (input.scheduledAt || input.durationMinutes)) {
-    await assertNoTimeConflict(nextStart, nextDuration, id)
+    await assertNoTimeConflict(trainerId, nextStart, nextDuration, id)
   }
 
   return prisma.appointment.update({

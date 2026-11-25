@@ -8,9 +8,15 @@ import { LoadingSkeleton } from '@/components/shared/States'
 import { ThemeProvider } from '@/components/shared/ThemeProvider'
 import { AuthProvider, RequireRole } from '@/features/auth/AuthContext'
 import { LandingPage } from '@/features/landing/LandingPage'
+import { PlatformLandingPage } from '@/features/landing/PlatformLandingPage'
 
 const LoginPage = React.lazy(() =>
   import('@/features/auth/LoginPage').then((m) => ({ default: m.LoginPage })),
+)
+const RegisterTrainerPage = React.lazy(() =>
+  import('@/features/auth/RegisterTrainerPage').then((m) => ({
+    default: m.RegisterTrainerPage,
+  })),
 )
 const AcceptInvitationPage = React.lazy(() =>
   import('@/features/auth/AcceptInvitationPage').then((m) => ({
@@ -117,11 +123,13 @@ export function App() {
           <BrowserRouter>
             <React.Suspense fallback={<PageFallback />}>
               <Routes>
-                {/* Landing pública y Auth */}
-                <Route path="/" element={<LandingPage />} />
+                {/* Landing pública SaaS, Auth y Landing única por entrenador */}
+                <Route path="/" element={<PlatformLandingPage />} />
                 <Route path="/login" element={<LoginPage />} />
+                <Route path="/registro" element={<RegisterTrainerPage />} />
                 <Route path="/invitacion" element={<AcceptInvitationPage />} />
                 <Route path="/recuperar-password" element={<ForgotPasswordPage />} />
+                <Route path="/:slug" element={<LandingPage />} />
 
                 {/* Panel del Entrenador */}
                 <Route

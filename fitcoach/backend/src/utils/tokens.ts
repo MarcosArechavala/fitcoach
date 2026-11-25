@@ -6,6 +6,7 @@ import { env } from '../config/env.js'
 export interface SessionPayload {
   sub: string
   role: UserRole
+  trainerId?: string
   studentId?: string
 }
 

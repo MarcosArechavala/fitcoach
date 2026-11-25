@@ -12,7 +12,7 @@ async function main() {
 
   const passwordHash = await bcrypt.hash(trainerPassword, 12)
 
-  await prisma.user.upsert({
+  const trainerUser = await prisma.user.upsert({
     where: { email: trainerEmail },
     update: {},
     create: {
@@ -22,6 +22,7 @@ async function main() {
       isActive: true,
       trainerProfile: {
         create: {
+          slug: 'martin-alvarez',
           firstName: 'Martín',
           lastName: 'Álvarez',
           headline: 'Personal Trainer & Preparador Físico',
@@ -36,13 +37,16 @@ async function main() {
         },
       },
     },
+    include: { trainerProfile: { select: { id: true } } },
   })
 
+  const trainerId = trainerUser.trainerProfile!.id
+
   await prisma.siteSettings.upsert({
-    where: { id: 'default' },
+    where: { trainerId },
     update: {},
     create: {
-      id: 'default',
+      trainerId,
       brandName: 'FITCOACH',
       tagline: 'Entrenamiento Personalizado',
       location: 'Buenos Aires, Argentina',
@@ -104,9 +108,9 @@ async function main() {
 
   for (const plan of plans) {
     await prisma.servicePlan.upsert({
-      where: { slug: plan.slug },
+      where: { trainerId_slug: { trainerId, slug: plan.slug } },
       update: {},
-      create: plan,
+      create: { ...plan, trainerId },
     })
   }
 

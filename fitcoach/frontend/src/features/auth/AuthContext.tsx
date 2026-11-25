@@ -6,8 +6,10 @@ import { apiRequest, setStoredToken } from '@/lib/api'
 export interface AuthUser {
   id: string
   email: string
-  role: 'TRAINER' | 'STUDENT'
+  role: 'SUPER_ADMIN' | 'TRAINER' | 'STUDENT'
   fullName: string
+  trainerId?: string
+  trainerSlug?: string
   studentId?: string
 }
 

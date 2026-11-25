@@ -19,6 +19,7 @@ paymentsRouter.get(
   validate({ query: listPaymentsQuerySchema }),
   asyncHandler(async (req, res) => {
     const data = await paymentsService.listPayments(
+      req.auth!.trainerId!,
       req.query as {
         status?: 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED'
         studentId?: string
@@ -32,7 +33,10 @@ paymentsRouter.post(
   '/',
   validate({ body: createPaymentSchema }),
   asyncHandler(async (req, res) => {
-    const payment = await paymentsService.createPayment(req.body)
+    const payment = await paymentsService.createPayment(
+      req.auth!.trainerId!,
+      req.body,
+    )
     res.status(201).json({ payment })
   }),
 )
@@ -42,6 +46,7 @@ paymentsRouter.patch(
   validate({ params: paymentIdParamSchema, body: updatePaymentSchema }),
   asyncHandler(async (req, res) => {
     const payment = await paymentsService.updatePayment(
+      req.auth!.trainerId!,
       req.params.id as string,
       req.body,
     )

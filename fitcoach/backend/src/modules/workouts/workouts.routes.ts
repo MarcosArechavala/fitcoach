@@ -57,8 +57,8 @@ workoutsRouter.get(
 workoutsRouter.get(
   '/templates',
   requireRole('TRAINER'),
-  asyncHandler(async (_req, res) => {
-    const templates = await workoutsService.listTemplates()
+  asyncHandler(async (req, res) => {
+    const templates = await workoutsService.listTemplates(req.auth!.trainerId!)
     res.json({ templates })
   }),
 )
@@ -68,7 +68,10 @@ workoutsRouter.post(
   requireRole('TRAINER'),
   validate({ body: createTemplateSchema }),
   asyncHandler(async (req, res) => {
-    const template = await workoutsService.createTemplate(req.body)
+    const template = await workoutsService.createTemplate(
+      req.auth!.trainerId!,
+      req.body,
+    )
     res.status(201).json({ template })
   }),
 )

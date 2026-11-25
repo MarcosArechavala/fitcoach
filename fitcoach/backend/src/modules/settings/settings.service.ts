@@ -1,24 +1,39 @@
 import { prisma } from '../../config/prisma.js'
 import { AppError } from '../../utils/errors.js'
 
-export async function getPublicSettings() {
-  const [site, trainer, plans] = await Promise.all([
-    prisma.siteSettings.findUnique({ where: { id: 'default' } }),
-    prisma.trainerProfile.findFirst({
-      select: {
-        firstName: true,
-        lastName: true,
-        headline: true,
-        bio: true,
-        philosophy: true,
-        experienceYears: true,
-        certifications: true,
-        whatsapp: true,
-        instagram: true,
-      },
-    }),
+const PUBLIC_TRAINER_SELECT = {
+  id: true,
+  slug: true,
+  firstName: true,
+  lastName: true,
+  headline: true,
+  bio: true,
+  philosophy: true,
+  experienceYears: true,
+  certifications: true,
+  whatsapp: true,
+  instagram: true,
+} as const
+
+export async function getPublicSettings(slug?: string) {
+  const trainer = slug
+    ? await prisma.trainerProfile.findUnique({
+        where: { slug },
+        select: PUBLIC_TRAINER_SELECT,
+      })
+    : await prisma.trainerProfile.findFirst({
+        orderBy: { createdAt: 'asc' },
+        select: PUBLIC_TRAINER_SELECT,
+      })
+
+  if (!trainer) {
+    throw new AppError('Entrenador no encontrado', 404, 'TRAINER_NOT_FOUND')
+  }
+
+  const [site, plans] = await Promise.all([
+    prisma.siteSettings.findUnique({ where: { trainerId: trainer.id } }),
     prisma.servicePlan.findMany({
-      where: { isActive: true },
+      where: { trainerId: trainer.id, isActive: true },
       orderBy: { sortOrder: 'asc' },
     }),
   ])
@@ -26,31 +41,64 @@ export async function getPublicSettings() {
   return { site, trainer, plans }
 }
 
-export async function getTrainerSettings() {
+export async function listPublicCoaches() {
+  const coaches = await prisma.trainerProfile.findMany({
+    where: {
+      user: { isActive: true, deletedAt: null },
+    },
+    select: {
+      slug: true,
+      firstName: true,
+      lastName: true,
+      headline: true,
+      experienceYears: true,
+      siteSettings: {
+        select: {
+          brandName: true,
+          tagline: true,
+          location: true,
+          primaryColor: true,
+        },
+      },
+    },
+    orderBy: { createdAt: 'asc' },
+    take: 24,
+  })
+
+  return coaches
+}
+
+export async function getTrainerSettings(trainerId: string) {
   const [site, trainer, plans] = await Promise.all([
-    prisma.siteSettings.findUnique({ where: { id: 'default' } }),
-    prisma.trainerProfile.findFirst(),
-    prisma.servicePlan.findMany({ orderBy: { sortOrder: 'asc' } }),
+    prisma.siteSettings.findUnique({ where: { trainerId } }),
+    prisma.trainerProfile.findUnique({ where: { id: trainerId } }),
+    prisma.servicePlan.findMany({
+      where: { trainerId },
+      orderBy: { sortOrder: 'asc' },
+    }),
   ])
 
   return { site, trainer, plans }
 }
 
-export async function updateSiteSettings(data: {
-  brandName?: string
-  tagline?: string
-  location?: string
-  whatsapp?: string
-  email?: string
-  instagram?: string | null
-  primaryColor?: string
-  scheduleText?: string | null
-}) {
+export async function updateSiteSettings(
+  trainerId: string,
+  data: {
+    brandName?: string
+    tagline?: string
+    location?: string
+    whatsapp?: string
+    email?: string
+    instagram?: string | null
+    primaryColor?: string
+    scheduleText?: string | null
+  },
+) {
   return prisma.siteSettings.upsert({
-    where: { id: 'default' },
+    where: { trainerId },
     update: data,
     create: {
-      id: 'default',
+      trainerId,
       ...data,
     },
   })
@@ -59,6 +107,7 @@ export async function updateSiteSettings(data: {
 export async function updateTrainerProfile(
   userId: string,
   data: {
+    slug?: string
     firstName?: string
     lastName?: string
     headline?: string | null
@@ -71,9 +120,21 @@ export async function updateTrainerProfile(
 ) {
   const profile = await prisma.trainerProfile.findUnique({
     where: { userId },
-    select: { id: true },
+    select: { id: true, slug: true },
   })
-  if (!profile) throw new AppError('Perfil de entrenador no encontrado', 404, 'NOT_FOUND')
+  if (!profile) {
+    throw new AppError('Perfil de entrenador no encontrado', 404, 'NOT_FOUND')
+  }
+
+  if (data.slug && data.slug !== profile.slug) {
+    const taken = await prisma.trainerProfile.findUnique({
+      where: { slug: data.slug },
+      select: { id: true },
+    })
+    if (taken) {
+      throw new AppError('Ese enlace ya está en uso por otro entrenador', 409, 'SLUG_EXISTS')
+    }
+  }
 
   return prisma.trainerProfile.update({
     where: { userId },
@@ -82,6 +143,7 @@ export async function updateTrainerProfile(
 }
 
 export async function updateServicePlan(
+  trainerId: string,
   id: string,
   data: {
     name?: string
@@ -91,13 +153,21 @@ export async function updateServicePlan(
     isActive?: boolean
   },
 ) {
+  const existing = await prisma.servicePlan.findFirst({
+    where: { id, trainerId },
+    select: { id: true },
+  })
+  if (!existing) {
+    throw new AppError('Plan no encontrado', 404, 'NOT_FOUND')
+  }
+
   return prisma.servicePlan.update({
     where: { id },
     data,
   })
 }
 
-export async function getTrainerDashboardMetrics() {
+export async function getTrainerDashboardMetrics(trainerId: string) {
   const now = new Date()
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
   const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
@@ -118,23 +188,33 @@ export async function getTrainerDashboardMetrics() {
     recentCompletedWorkouts,
     recentLeads,
   ] = await Promise.all([
-    prisma.studentProfile.count({ where: { status: 'ACTIVE', deletedAt: null } }),
     prisma.studentProfile.count({
-      where: { joinedAt: { gte: monthStart, lte: monthEnd }, deletedAt: null },
+      where: { trainerId, status: 'ACTIVE', deletedAt: null },
+    }),
+    prisma.studentProfile.count({
+      where: {
+        trainerId,
+        joinedAt: { gte: monthStart, lte: monthEnd },
+        deletedAt: null,
+      },
     }),
     prisma.appointment.count({
       where: {
+        trainerId,
         scheduledAt: { gte: todayStart, lte: todayEnd },
         status: { notIn: ['CANCELLED'] },
       },
     }),
-    prisma.payment.count({ where: { status: { in: ['PENDING', 'OVERDUE'] } } }),
+    prisma.payment.count({
+      where: { trainerId, status: { in: ['PENDING', 'OVERDUE'] } },
+    }),
     prisma.payment.aggregate({
-      where: { status: { in: ['PENDING', 'OVERDUE'] } },
+      where: { trainerId, status: { in: ['PENDING', 'OVERDUE'] } },
       _sum: { amountArs: true },
     }),
     prisma.payment.aggregate({
       where: {
+        trainerId,
         status: 'PAID',
         paidAt: { gte: monthStart, lte: monthEnd },
       },
@@ -142,12 +222,14 @@ export async function getTrainerDashboardMetrics() {
     }),
     prisma.workoutSession.count({
       where: {
+        student: { trainerId },
         status: 'COMPLETED',
         completedAt: { gte: monthStart, lte: monthEnd },
       },
     }),
     prisma.appointment.findMany({
       where: {
+        trainerId,
         scheduledAt: { gte: todayStart, lte: todayEnd },
         status: { notIn: ['CANCELLED'] },
       },
@@ -158,7 +240,10 @@ export async function getTrainerDashboardMetrics() {
       take: 6,
     }),
     prisma.workoutSession.findMany({
-      where: { status: 'COMPLETED' },
+      where: {
+        student: { trainerId },
+        status: 'COMPLETED',
+      },
       include: {
         student: { select: { firstName: true, lastName: true } },
       },
@@ -166,6 +251,7 @@ export async function getTrainerDashboardMetrics() {
       take: 4,
     }),
     prisma.contactLead.findMany({
+      where: { trainerId },
       orderBy: { createdAt: 'desc' },
       take: 3,
     }),

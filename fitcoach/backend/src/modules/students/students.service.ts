@@ -62,12 +62,16 @@ const studentInclude = {
   },
 } satisfies Prisma.StudentProfileInclude
 
-export async function listStudents(filters: {
-  search?: string
-  status?: 'ACTIVE' | 'PAUSED' | 'ARCHIVED'
-  experienceLevel?: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED'
-}) {
+export async function listStudents(
+  trainerId: string,
+  filters: {
+    search?: string
+    status?: 'ACTIVE' | 'PAUSED' | 'ARCHIVED'
+    experienceLevel?: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED'
+  },
+) {
   const where: Prisma.StudentProfileWhereInput = {
+    trainerId,
     ...(filters.status ? { status: filters.status } : { status: { not: 'ARCHIVED' } }),
     ...(filters.experienceLevel ? { experienceLevel: filters.experienceLevel } : {}),
     ...(filters.search
@@ -104,19 +108,22 @@ export async function getStudentById(studentId: string) {
   return serializeStudent(student)
 }
 
-export async function createStudent(input: {
-  email: string
-  firstName: string
-  lastName: string
-  phone?: string | null
-  birthDate?: string | null
-  heightCm?: number | null
-  currentWeightKg?: number | null
-  goal?: string | null
-  experienceLevel: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED'
-  servicePlanId?: string | null
-  notes?: string | null
-}) {
+export async function createStudent(
+  trainerId: string,
+  input: {
+    email: string
+    firstName: string
+    lastName: string
+    phone?: string | null
+    birthDate?: string | null
+    heightCm?: number | null
+    currentWeightKg?: number | null
+    goal?: string | null
+    experienceLevel: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED'
+    servicePlanId?: string | null
+    notes?: string | null
+  },
+) {
   const existing = await prisma.user.findUnique({
     where: { email: input.email },
     select: { id: true },
@@ -142,6 +149,7 @@ export async function createStudent(input: {
     const student = await tx.studentProfile.create({
       data: {
         userId: user.id,
+        trainerId,
         firstName: input.firstName,
         lastName: input.lastName,
         phone: input.phone ?? null,
@@ -333,9 +341,9 @@ export async function regenerateInvitation(studentId: string) {
   }
 }
 
-export async function listActivePlans() {
+export async function listActivePlans(trainerId: string) {
   return prisma.servicePlan.findMany({
-    where: { isActive: true },
+    where: { trainerId, isActive: true },
     orderBy: { sortOrder: 'asc' },
     select: { id: true, name: true, priceArs: true, modality: true },
   })

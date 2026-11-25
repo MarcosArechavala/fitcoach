@@ -66,9 +66,9 @@ function serializeTemplate(
   }
 }
 
-export async function listTemplates() {
+export async function listTemplates(trainerId: string) {
   const templates = await prisma.workoutTemplate.findMany({
-    where: { deletedAt: null },
+    where: { trainerId, deletedAt: null },
     orderBy: { updatedAt: 'desc' },
     include: {
       days: {
@@ -106,15 +106,19 @@ export async function getTemplateById(id: string) {
   return serializeTemplate(tpl)
 }
 
-export async function createTemplate(input: {
-  name: string
-  description?: string | null
-  goal?: string | null
-  weeksCount: number
-  isTemplate: boolean
-}) {
+export async function createTemplate(
+  trainerId: string,
+  input: {
+    name: string
+    description?: string | null
+    goal?: string | null
+    weeksCount: number
+    isTemplate: boolean
+  },
+) {
   const created = await prisma.workoutTemplate.create({
     data: {
+      trainerId,
       name: input.name,
       description: input.description ?? null,
       goal: input.goal ?? null,

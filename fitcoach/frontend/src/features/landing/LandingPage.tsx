@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -66,21 +66,25 @@ const NAV_LINKS = [
 ]
 
 export function LandingPage() {
+  const { slug } = useParams<{ slug?: string }>()
   const { theme, toggleTheme } = useTheme()
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false)
   const [submittedLead, setSubmittedLead] = React.useState<ContactFormValues | null>(null)
 
   const publicQuery = useQuery({
-    queryKey: ['public-settings'],
+    queryKey: ['public-settings', slug ?? 'default'],
     queryFn: () =>
       apiRequest<{
         site: {
           brandName: string
+          tagline: string
           location: string
           whatsapp: string
           email: string
+          primaryColor?: string
         } | null
         trainer: {
+          slug: string
           firstName: string
           lastName: string
           headline: string | null
@@ -96,7 +100,7 @@ export function LandingPage() {
           priceArs: number
           features: string[] | null
         }[]
-      }>('/settings/public'),
+      }>(slug ? `/settings/public/${encodeURIComponent(slug)}` : '/settings/public'),
     retry: false,
   })
 
@@ -137,7 +141,10 @@ export function LandingPage() {
     try {
       await apiRequest('/leads', {
         method: 'POST',
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          ...data,
+          ...(slug ? { trainerSlug: slug } : {}),
+        }),
       })
       setSubmittedLead(data)
       toast.success('¡Consulta enviada! Te responderemos a la brevedad.')
@@ -149,6 +156,28 @@ export function LandingPage() {
           : 'No pudimos enviar tu consulta. Probá por WhatsApp.',
       )
     }
+  }
+
+  if (slug && publicQuery.isError) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-canvas px-4 text-center text-ink">
+        <BrandLogo />
+        <h1 className="mt-6 font-display text-3xl font-extrabold uppercase">
+          Entrenador no encontrado
+        </h1>
+        <p className="mt-2 max-w-md text-sm text-muted">
+          No encontramos una página pública asociada a <strong>/{slug}</strong>.
+        </p>
+        <div className="mt-6 flex gap-3">
+          <Link to="/">
+            <Button>Ir al inicio</Button>
+          </Link>
+          <Link to="/registro">
+            <Button variant="outline">Crear mi página</Button>
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   const whatsappHref = buildWhatsAppUrl(

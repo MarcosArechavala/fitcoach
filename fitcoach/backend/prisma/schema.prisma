@@ -8,6 +8,7 @@ datasource db {
 }
 
 enum UserRole {
+  SUPER_ADMIN
   TRAINER
   STUDENT
 }
@@ -102,6 +103,7 @@ model User {
 model TrainerProfile {
   id              String   @id @default(cuid())
   userId          String   @unique
+  slug            String   @unique
   firstName       String
   lastName        String
   headline        String?
@@ -116,12 +118,21 @@ model TrainerProfile {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  siteSettings     SiteSettings?
+  students         StudentProfile[]
+  servicePlans     ServicePlan[]
+  exercises        Exercise[]
+  workoutTemplates WorkoutTemplate[]
+  appointments     Appointment[]
+  payments         Payment[]
+  leads            ContactLead[]
 }
 
 model StudentProfile {
   id              String          @id @default(cuid())
   userId          String          @unique
+  trainerId       String?
   firstName       String
   lastName        String
   phone           String?
@@ -138,6 +149,7 @@ model StudentProfile {
   updatedAt       DateTime        @updatedAt
 
   user             User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trainer          TrainerProfile?       @relation(fields: [trainerId], references: [id], onDelete: SetNull)
   subscriptions    StudentSubscription[]
   assignments      WorkoutAssignment[]
   workoutSessions  WorkoutSession[]
@@ -145,14 +157,16 @@ model StudentProfile {
   appointments     Appointment[]
   payments         Payment[]
 
+  @@index([trainerId, status, deletedAt])
   @@index([status, deletedAt])
   @@index([lastName, firstName])
 }
 
 model ServicePlan {
   id          String       @id @default(cuid())
+  trainerId   String?
   name        String
-  slug        String       @unique
+  slug        String
   badge       String?
   description String?
   priceArs    Int
@@ -163,8 +177,12 @@ model ServicePlan {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
+  trainer       TrainerProfile?       @relation(fields: [trainerId], references: [id], onDelete: Cascade)
   subscriptions StudentSubscription[]
   payments      Payment[]
+
+  @@unique([trainerId, slug])
+  @@index([trainerId, isActive])
 }
 
 model StudentSubscription {
@@ -186,6 +204,7 @@ model StudentSubscription {
 
 model Exercise {
   id           String             @id @default(cuid())
+  trainerId    String?
   name         String
   muscleGroup  String
   equipment    String?
@@ -197,13 +216,16 @@ model Exercise {
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
 
+  trainer          TrainerProfile?   @relation(fields: [trainerId], references: [id], onDelete: Cascade)
   workoutExercises WorkoutExercise[]
 
+  @@index([trainerId, muscleGroup, isArchived])
   @@index([muscleGroup, isArchived])
 }
 
 model WorkoutTemplate {
   id          String   @id @default(cuid())
+  trainerId   String?
   name        String
   description String?
   goal        String?
@@ -213,8 +235,11 @@ model WorkoutTemplate {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  trainer     TrainerProfile?     @relation(fields: [trainerId], references: [id], onDelete: Cascade)
   days        WorkoutDay[]
   assignments WorkoutAssignment[]
+
+  @@index([trainerId, deletedAt])
 }
 
 model WorkoutDay {
@@ -335,6 +360,7 @@ model BodyMeasurement {
 
 model Appointment {
   id              String            @id @default(cuid())
+  trainerId       String?
   studentId       String
   title           String
   modality        PlanModality      @default(IN_PERSON)
@@ -345,14 +371,17 @@ model Appointment {
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 
-  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  trainer TrainerProfile? @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+  student StudentProfile  @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
+  @@index([trainerId, scheduledAt, status])
   @@index([scheduledAt, status])
   @@index([studentId, scheduledAt])
 }
 
 model Payment {
   id            String        @id @default(cuid())
+  trainerId     String?
   studentId     String
   servicePlanId String?
   amountArs     Int
@@ -366,15 +395,18 @@ model Payment {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
-  student     StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  servicePlan ServicePlan?   @relation(fields: [servicePlanId], references: [id], onDelete: SetNull)
+  trainer     TrainerProfile? @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+  student     StudentProfile  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  servicePlan ServicePlan?    @relation(fields: [servicePlanId], references: [id], onDelete: SetNull)
 
+  @@index([trainerId, status, dueDate])
   @@index([studentId, status])
   @@index([dueDate, status])
 }
 
 model ContactLead {
   id        String     @id @default(cuid())
+  trainerId String?
   name      String
   email     String
   whatsapp  String
@@ -385,11 +417,15 @@ model ContactLead {
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 
+  trainer TrainerProfile? @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+
+  @@index([trainerId, status, createdAt])
   @@index([status, createdAt])
 }
 
 model SiteSettings {
-  id           String   @id @default("default")
+  id           String   @id @default(cuid())
+  trainerId    String?  @unique
   brandName    String   @default("FITCOACH")
   tagline      String   @default("Entrenamiento Personalizado")
   location     String   @default("Buenos Aires, Argentina")
@@ -400,4 +436,6 @@ model SiteSettings {
   logoUrl      String?
   scheduleText String?  @default("Lunes a Sábado de 07:00 a 21:00 hs")
   updatedAt    DateTime @updatedAt
+
+  trainer TrainerProfile? @relation(fields: [trainerId], references: [id], onDelete: Cascade)
 }

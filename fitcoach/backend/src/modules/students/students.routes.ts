@@ -22,8 +22,8 @@ studentsRouter.use(requireAuth)
 studentsRouter.get(
   '/plans',
   requireRole('TRAINER'),
-  asyncHandler(async (_req, res) => {
-    const plans = await studentsService.listActivePlans()
+  asyncHandler(async (req, res) => {
+    const plans = await studentsService.listActivePlans(req.auth!.trainerId!)
     res.json({ plans })
   }),
 )
@@ -59,6 +59,7 @@ studentsRouter.get(
   validate({ query: listStudentsQuerySchema }),
   asyncHandler(async (req, res) => {
     const students = await studentsService.listStudents(
+      req.auth!.trainerId!,
       req.query as {
         search?: string
         status?: 'ACTIVE' | 'PAUSED' | 'ARCHIVED'
@@ -74,7 +75,10 @@ studentsRouter.post(
   requireRole('TRAINER'),
   validate({ body: createStudentSchema }),
   asyncHandler(async (req, res) => {
-    const result = await studentsService.createStudent(req.body)
+    const result = await studentsService.createStudent(
+      req.auth!.trainerId!,
+      req.body,
+    )
     res.status(201).json(result)
   }),
 )

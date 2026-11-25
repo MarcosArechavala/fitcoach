@@ -10,7 +10,7 @@ export interface TrainerNotificationItem {
   href: string
 }
 
-export async function getTrainerNotifications(): Promise<{
+export async function getTrainerNotifications(trainerId: string): Promise<{
   items: TrainerNotificationItem[]
   unreadCount: number
 }> {
@@ -26,12 +26,13 @@ export async function getTrainerNotifications(): Promise<{
   const [newLeads, duePayments, recentSessions, todayAppointments] =
     await Promise.all([
       prisma.contactLead.findMany({
-        where: { status: 'NEW' },
+        where: { trainerId, status: 'NEW' },
         orderBy: { createdAt: 'desc' },
         take: 5,
       }),
       prisma.payment.findMany({
         where: {
+          trainerId,
           status: { in: ['OVERDUE', 'PENDING'] },
           dueDate: { lte: threeDaysFromNow },
         },
@@ -43,6 +44,7 @@ export async function getTrainerNotifications(): Promise<{
       }),
       prisma.workoutSession.findMany({
         where: {
+          student: { trainerId },
           status: 'COMPLETED',
           completedAt: { gte: twoDaysAgo },
         },
@@ -54,6 +56,7 @@ export async function getTrainerNotifications(): Promise<{
       }),
       prisma.appointment.findMany({
         where: {
+          trainerId,
           scheduledAt: { gte: startOfDay, lte: endOfDay },
           status: { in: ['SCHEDULED', 'CONFIRMED'] },
         },

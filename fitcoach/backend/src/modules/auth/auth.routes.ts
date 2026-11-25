@@ -10,6 +10,7 @@ import {
   changePasswordSchema,
   forgotPasswordSchema,
   loginSchema,
+  registerTrainerSchema,
   resetPasswordSchema,
 } from './auth.schema.js'
 import * as authService from './auth.service.js'
@@ -38,6 +39,17 @@ function setSessionCookie(res: import('express').Response, token: string) {
     path: '/',
   })
 }
+
+authRouter.post(
+  '/register-trainer',
+  authLimiter,
+  validate({ body: registerTrainerSchema }),
+  asyncHandler(async (req, res) => {
+    const { token, user } = await authService.registerTrainer(req.body)
+    setSessionCookie(res, token)
+    res.status(201).json({ user, token })
+  }),
+)
 
 authRouter.post(
   '/login',

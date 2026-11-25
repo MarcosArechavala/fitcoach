@@ -19,6 +19,7 @@ exercisesRouter.get(
   validate({ query: listExercisesQuerySchema }),
   asyncHandler(async (req, res) => {
     const exercises = await exercisesService.listExercises(
+      req.auth!.trainerId!,
       req.query as {
         search?: string
         muscleGroup?: string
@@ -34,7 +35,10 @@ exercisesRouter.post(
   '/',
   validate({ body: createExerciseSchema }),
   asyncHandler(async (req, res) => {
-    const exercise = await exercisesService.createExercise(req.body)
+    const exercise = await exercisesService.createExercise(
+      req.auth!.trainerId!,
+      req.body,
+    )
     res.status(201).json({ exercise })
   }),
 )
@@ -44,6 +48,7 @@ exercisesRouter.patch(
   validate({ params: exerciseIdParamSchema, body: updateExerciseSchema }),
   asyncHandler(async (req, res) => {
     const exercise = await exercisesService.updateExercise(
+      req.auth!.trainerId!,
       req.params.id as string,
       req.body,
     )

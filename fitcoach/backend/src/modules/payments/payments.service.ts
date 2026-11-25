@@ -1,10 +1,13 @@
 import { prisma } from '../../config/prisma.js'
 import { AppError } from '../../utils/errors.js'
 
-export async function listPayments(filters: {
-  status?: 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED'
-  studentId?: string
-}) {
+export async function listPayments(
+  trainerId: string,
+  filters: {
+    status?: 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED'
+    studentId?: string
+  },
+) {
   const now = new Date()
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
   const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
@@ -12,6 +15,7 @@ export async function listPayments(filters: {
   const [payments, paidThisMonth, pendingTotal] = await Promise.all([
     prisma.payment.findMany({
       where: {
+        trainerId,
         ...(filters.status ? { status: filters.status } : {}),
         ...(filters.studentId ? { studentId: filters.studentId } : {}),
       },
@@ -23,13 +27,14 @@ export async function listPayments(filters: {
     }),
     prisma.payment.aggregate({
       where: {
+        trainerId,
         status: 'PAID',
         paidAt: { gte: monthStart, lte: monthEnd },
       },
       _sum: { amountArs: true },
     }),
     prisma.payment.aggregate({
-      where: { status: { in: ['PENDING', 'OVERDUE'] } },
+      where: { trainerId, status: { in: ['PENDING', 'OVERDUE'] } },
       _sum: { amountArs: true },
       _count: { id: true },
     }),
@@ -45,17 +50,20 @@ export async function listPayments(filters: {
   }
 }
 
-export async function createPayment(input: {
-  studentId: string
-  servicePlanId?: string | null
-  amountArs: number
-  method: 'CASH' | 'TRANSFER' | 'MERCADO_PAGO'
-  status: 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED'
-  dueDate: string
-  paidAt?: string | null
-  periodLabel?: string | null
-  notes?: string | null
-}) {
+export async function createPayment(
+  trainerId: string,
+  input: {
+    studentId: string
+    servicePlanId?: string | null
+    amountArs: number
+    method: 'CASH' | 'TRANSFER' | 'MERCADO_PAGO'
+    status: 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED'
+    dueDate: string
+    paidAt?: string | null
+    periodLabel?: string | null
+    notes?: string | null
+  },
+) {
   const paidAt =
     input.status === 'PAID'
       ? input.paidAt
@@ -65,6 +73,7 @@ export async function createPayment(input: {
 
   return prisma.payment.create({
     data: {
+      trainerId,
       studentId: input.studentId,
       servicePlanId: input.servicePlanId ?? null,
       amountArs: input.amountArs,
@@ -83,6 +92,7 @@ export async function createPayment(input: {
 }
 
 export async function updatePayment(
+  trainerId: string,
   id: string,
   input: {
     status?: 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED'
@@ -91,7 +101,7 @@ export async function updatePayment(
     notes?: string | null
   },
 ) {
-  const existing = await prisma.payment.findUnique({ where: { id } })
+  const existing = await prisma.payment.findFirst({ where: { id, trainerId } })
   if (!existing) throw new AppError('Pago no encontrado', 404, 'NOT_FOUND')
 
   const nextPaidAt =

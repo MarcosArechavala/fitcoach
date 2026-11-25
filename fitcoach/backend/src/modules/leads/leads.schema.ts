@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 export const createLeadSchema = z.object({
+  trainerSlug: z.string().trim().optional(),
   name: z.string().min(2, 'Ingresá tu nombre'),
   email: z.string().trim().toLowerCase().email('Email inválido'),
   whatsapp: z.string().min(8, 'Ingresá un WhatsApp válido'),

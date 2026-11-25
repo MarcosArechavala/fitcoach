@@ -42,7 +42,7 @@ leadsRouter.get(
       | 'CONVERTED'
       | 'DISCARDED'
       | undefined
-    const leads = await leadsService.listLeads(status)
+    const leads = await leadsService.listLeads(req.auth!.trainerId!, status)
     res.json({ leads })
   }),
 )
@@ -53,7 +53,11 @@ leadsRouter.patch(
   requireRole('TRAINER'),
   validate({ params: leadIdParamSchema, body: updateLeadSchema }),
   asyncHandler(async (req, res) => {
-    const lead = await leadsService.updateLead(req.params.id as string, req.body)
+    const lead = await leadsService.updateLead(
+      req.auth!.trainerId!,
+      req.params.id as string,
+      req.body,
+    )
     res.json({ lead })
   }),
 )

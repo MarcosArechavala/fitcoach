@@ -2,22 +2,30 @@ import type { Prisma } from '@prisma/client'
 import { prisma } from '../../config/prisma.js'
 import { AppError } from '../../utils/errors.js'
 
-export async function listExercises(filters: {
-  search?: string
-  muscleGroup?: string
-  difficulty?: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED'
-  includeArchived?: string
-}) {
+export async function listExercises(
+  trainerId: string,
+  filters: {
+    search?: string
+    muscleGroup?: string
+    difficulty?: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED'
+    includeArchived?: string
+  },
+) {
   const where: Prisma.ExerciseWhereInput = {
+    OR: [{ trainerId }, { trainerId: null }],
     ...(filters.includeArchived === 'true' ? {} : { isArchived: false }),
     ...(filters.muscleGroup ? { muscleGroup: filters.muscleGroup } : {}),
     ...(filters.difficulty ? { difficulty: filters.difficulty } : {}),
     ...(filters.search
       ? {
-          OR: [
-            { name: { contains: filters.search, mode: 'insensitive' } },
-            { muscleGroup: { contains: filters.search, mode: 'insensitive' } },
-            { equipment: { contains: filters.search, mode: 'insensitive' } },
+          AND: [
+            {
+              OR: [
+                { name: { contains: filters.search, mode: 'insensitive' } },
+                { muscleGroup: { contains: filters.search, mode: 'insensitive' } },
+                { equipment: { contains: filters.search, mode: 'insensitive' } },
+              ],
+            },
           ],
         }
       : {}),
@@ -29,17 +37,21 @@ export async function listExercises(filters: {
   })
 }
 
-export async function createExercise(input: {
-  name: string
-  muscleGroup: string
-  equipment?: string | null
-  difficulty: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED'
-  description?: string | null
-  instructions?: string | null
-  mediaUrl?: string | null
-}) {
+export async function createExercise(
+  trainerId: string,
+  input: {
+    name: string
+    muscleGroup: string
+    equipment?: string | null
+    difficulty: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED'
+    description?: string | null
+    instructions?: string | null
+    mediaUrl?: string | null
+  },
+) {
   return prisma.exercise.create({
     data: {
+      trainerId,
       name: input.name,
       muscleGroup: input.muscleGroup,
       equipment: input.equipment ?? null,
@@ -52,6 +64,7 @@ export async function createExercise(input: {
 }
 
 export async function updateExercise(
+  trainerId: string,
   id: string,
   input: {
     name?: string
@@ -64,7 +77,10 @@ export async function updateExercise(
     isArchived?: boolean
   },
 ) {
-  const existing = await prisma.exercise.findUnique({ where: { id }, select: { id: true } })
+  const existing = await prisma.exercise.findFirst({
+    where: { id, OR: [{ trainerId }, { trainerId: null }] },
+    select: { id: true },
+  })
   if (!existing) {
     throw new AppError('Ejercicio no encontrado', 404, 'NOT_FOUND')
   }

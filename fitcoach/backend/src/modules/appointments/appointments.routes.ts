@@ -34,6 +34,7 @@ appointmentsRouter.get(
   validate({ query: listAppointmentsQuerySchema }),
   asyncHandler(async (req, res) => {
     const appointments = await appointmentsService.listAppointments(
+      req.auth!.trainerId!,
       req.query as {
         from?: string
         to?: string
@@ -49,7 +50,10 @@ appointmentsRouter.post(
   requireRole('TRAINER'),
   validate({ body: createAppointmentSchema }),
   asyncHandler(async (req, res) => {
-    const appointment = await appointmentsService.createAppointment(req.body)
+    const appointment = await appointmentsService.createAppointment(
+      req.auth!.trainerId!,
+      req.body,
+    )
     res.status(201).json({ appointment })
   }),
 )
@@ -60,6 +64,7 @@ appointmentsRouter.patch(
   validate({ params: appointmentIdParamSchema, body: updateAppointmentSchema }),
   asyncHandler(async (req, res) => {
     const appointment = await appointmentsService.updateAppointment(
+      req.auth!.trainerId!,
       req.params.id as string,
       req.body,
     )

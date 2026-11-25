@@ -10,8 +10,10 @@ notificationsRouter.use(requireAuth)
 notificationsRouter.get(
   '/',
   asyncHandler(async (req, res) => {
-    if (req.auth!.role === 'TRAINER') {
-      const data = await notificationsService.getTrainerNotifications()
+    if (req.auth!.role === 'TRAINER' && req.auth!.trainerId) {
+      const data = await notificationsService.getTrainerNotifications(
+        req.auth!.trainerId,
+      )
       res.json(data)
       return
     }

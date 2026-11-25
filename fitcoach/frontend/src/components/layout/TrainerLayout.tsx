@@ -145,14 +145,14 @@ export function TrainerLayout() {
 
         <div className="border-t border-line p-3">
           <Link
-            to="/"
+            to={user?.trainerSlug ? `/${user.trainerSlug}` : '/'}
             className={cn(
               'flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-medium text-muted hover:bg-elevated hover:text-ink',
               collapsed && 'justify-center px-2',
             )}
           >
             <ExternalLink className="h-4 w-4 shrink-0" aria-hidden="true" />
-            {!collapsed && <span>Ver landing pública</span>}
+            {!collapsed && <span>Ver mi landing pública</span>}
           </Link>
         </div>
       </aside>

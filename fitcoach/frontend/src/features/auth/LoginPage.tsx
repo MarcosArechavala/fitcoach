@@ -118,6 +118,13 @@ export function LoginPage() {
                 {isSubmitting ? 'Ingresando...' : 'Ingresar'}
               </Button>
             </form>
+
+            <p className="mt-4 text-center text-xs text-muted">
+              ¿Sos Personal Trainer y querés tu propia web?{' '}
+              <Link to="/registro" className="font-semibold text-brand-text hover:underline">
+                Creá tu cuenta gratis
+              </Link>
+            </p>
           </CardContent>
         </Card>
       </div>

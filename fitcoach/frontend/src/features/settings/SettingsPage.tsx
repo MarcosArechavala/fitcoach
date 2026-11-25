@@ -20,6 +20,7 @@ interface SettingsResponse {
     scheduleText: string | null
   } | null
   trainer: {
+    slug: string
     firstName: string
     lastName: string
     headline: string | null
@@ -54,6 +55,7 @@ export function SettingsPage() {
   })
 
   const [trainerForm, setTrainerForm] = React.useState({
+    slug: '',
     firstName: '',
     lastName: '',
     headline: '',
@@ -80,6 +82,7 @@ export function SettingsPage() {
     }
     if (d.trainer) {
       setTrainerForm({
+        slug: d.trainer.slug ?? '',
         firstName: d.trainer.firstName,
         lastName: d.trainer.lastName,
         headline: d.trainer.headline ?? '',
@@ -142,9 +145,45 @@ export function SettingsPage() {
           Configuración del Negocio
         </h1>
         <p className="text-sm text-muted">
-          Los cambios se reflejan automáticamente en la landing page pública.
+          Los cambios se reflejan automáticamente en tu landing page pública.
         </p>
       </div>
+
+      {trainerForm.slug && (
+        <Card className="border-brand/40 bg-elevated/40">
+          <CardContent className="flex flex-wrap items-center justify-between gap-4 p-4">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-brand-text">
+                Tu Landing Page Única
+              </p>
+              <p className="mt-0.5 text-sm font-medium text-ink">
+                {window.location.origin}/{trainerForm.slug}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  void navigator.clipboard.writeText(
+                    `${window.location.origin}/${trainerForm.slug}`,
+                  )
+                  toast.success('Enlace copiado al portapapeles')
+                }}
+              >
+                Copiar enlace
+              </Button>
+              <a
+                href={`/${trainerForm.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Button size="sm">Ver mi landing</Button>
+              </a>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
