@@ -3,6 +3,7 @@ import { requireAuth, requireRole } from '../../middlewares/auth.js'
 import { validate } from '../../middlewares/validate.js'
 import { asyncHandler } from '../../utils/errors.js'
 import {
+  createPlanSchema,
   planIdParamSchema,
   updatePlanSchema,
   updateSiteSettingsSchema,
@@ -84,6 +85,18 @@ settingsRouter.put(
   }),
 )
 
+settingsRouter.post(
+  '/plans',
+  validate({ body: createPlanSchema }),
+  asyncHandler(async (req, res) => {
+    const plan = await settingsService.createServicePlan(
+      req.auth!.trainerId!,
+      req.body,
+    )
+    res.status(201).json({ plan })
+  }),
+)
+
 settingsRouter.patch(
   '/plans/:id',
   validate({ params: planIdParamSchema, body: updatePlanSchema }),
@@ -94,5 +107,17 @@ settingsRouter.patch(
       req.body,
     )
     res.json({ plan })
+  }),
+)
+
+settingsRouter.delete(
+  '/plans/:id',
+  validate({ params: planIdParamSchema }),
+  asyncHandler(async (req, res) => {
+    const result = await settingsService.deleteServicePlan(
+      req.auth!.trainerId!,
+      req.params.id as string,
+    )
+    res.json(result)
   }),
 )

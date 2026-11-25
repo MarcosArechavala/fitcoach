@@ -13,6 +13,7 @@ const PUBLIC_TRAINER_SELECT = {
   certifications: true,
   whatsapp: true,
   instagram: true,
+  avatarUrl: true,
 } as const
 
 export async function getPublicSettings(slug?: string) {
@@ -92,14 +93,19 @@ export async function updateSiteSettings(
     instagram?: string | null
     primaryColor?: string
     scheduleText?: string | null
+    heroImageUrl?: string | null
+    heroTitle?: string | null
+    heroSubtitle?: string | null
+    services?: unknown
+    testimonials?: unknown
   },
 ) {
   return prisma.siteSettings.upsert({
     where: { trainerId },
-    update: data,
+    update: data as Record<string, unknown>,
     create: {
       trainerId,
-      ...data,
+      ...(data as Record<string, unknown>),
     },
   })
 }
@@ -116,6 +122,8 @@ export async function updateTrainerProfile(
     experienceYears?: number
     whatsapp?: string | null
     instagram?: string | null
+    avatarUrl?: string | null
+    certifications?: string[]
   },
 ) {
   const profile = await prisma.trainerProfile.findUnique({
@@ -142,6 +150,44 @@ export async function updateTrainerProfile(
   })
 }
 
+export async function createServicePlan(
+  trainerId: string,
+  data: {
+    name: string
+    badge?: string | null
+    description?: string | null
+    priceArs: number
+    modality: 'ONLINE' | 'IN_PERSON' | 'HYBRID'
+    features: string[]
+    isActive: boolean
+  },
+) {
+  const baseSlug = data.name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'plan'
+  const slug = `${baseSlug}-${Date.now().toString(36).slice(-4)}`
+
+  const count = await prisma.servicePlan.count({ where: { trainerId } })
+
+  return prisma.servicePlan.create({
+    data: {
+      trainerId,
+      slug,
+      name: data.name,
+      badge: data.badge ?? null,
+      description: data.description ?? null,
+      priceArs: data.priceArs,
+      modality: data.modality,
+      features: data.features,
+      isActive: data.isActive,
+      sortOrder: count + 1,
+    },
+  })
+}
+
 export async function updateServicePlan(
   trainerId: string,
   id: string,
@@ -150,6 +196,8 @@ export async function updateServicePlan(
     badge?: string | null
     description?: string | null
     priceArs?: number
+    modality?: 'ONLINE' | 'IN_PERSON' | 'HYBRID'
+    features?: string[]
     isActive?: boolean
   },
 ) {
@@ -165,6 +213,18 @@ export async function updateServicePlan(
     where: { id },
     data,
   })
+}
+
+export async function deleteServicePlan(trainerId: string, id: string) {
+  const existing = await prisma.servicePlan.findFirst({
+    where: { id, trainerId },
+    select: { id: true },
+  })
+  if (!existing) {
+    throw new AppError('Plan no encontrado', 404, 'NOT_FOUND')
+  }
+  await prisma.servicePlan.delete({ where: { id } })
+  return { deleted: true }
 }
 
 export async function getTrainerDashboardMetrics(trainerId: string) {

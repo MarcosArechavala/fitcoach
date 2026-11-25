@@ -434,6 +434,11 @@ model SiteSettings {
   instagram    String?  @default("@fitcoach.ar")
   primaryColor String   @default("#B8F34B")
   logoUrl      String?
+  heroImageUrl String?
+  heroTitle    String?
+  heroSubtitle String?
+  services     Json?
+  testimonials Json?
   scheduleText String?  @default("Lunes a Sábado de 07:00 a 21:00 hs")
   updatedAt    DateTime @updatedAt
 

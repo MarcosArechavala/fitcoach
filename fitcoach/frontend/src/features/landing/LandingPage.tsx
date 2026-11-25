@@ -81,7 +81,19 @@ export function LandingPage() {
           location: string
           whatsapp: string
           email: string
+          scheduleText?: string | null
           primaryColor?: string
+          heroImageUrl?: string | null
+          heroTitle?: string | null
+          heroSubtitle?: string | null
+          services?: ServiceItem[] | null
+          testimonials?: {
+            id: string
+            name: string
+            goal: string
+            quote: string
+            resultBadge: string
+          }[] | null
         } | null
         trainer: {
           slug: string
@@ -91,6 +103,8 @@ export function LandingPage() {
           bio: string | null
           philosophy: string | null
           experienceYears: number
+          certifications?: string[] | null
+          avatarUrl?: string | null
         } | null
         plans: {
           id: string
@@ -104,9 +118,46 @@ export function LandingPage() {
     retry: false,
   })
 
-  const activeWhatsapp = publicQuery.data?.site?.whatsapp ?? BRAND_CONFIG.whatsappNumber
-  const activeEmail = publicQuery.data?.site?.email ?? BRAND_CONFIG.email
-  const activeLocation = publicQuery.data?.site?.location ?? BRAND_CONFIG.location
+  const site = publicQuery.data?.site
+  const trainerData = publicQuery.data?.trainer
+
+  const activeBrandName = site?.brandName || BRAND_CONFIG.brandName
+  const activeTagline = site?.tagline || BRAND_CONFIG.tagline
+  const activeWhatsapp = site?.whatsapp || BRAND_CONFIG.whatsappNumber
+  const activeEmail = site?.email || BRAND_CONFIG.email
+  const activeLocation = site?.location || BRAND_CONFIG.location
+  const activeHeroImage = site?.heroImageUrl || '/images/hero-fitness.jpg'
+  const activeHeroTitle = site?.heroTitle || ''
+  const activeHeroSubtitle =
+    site?.heroSubtitle ||
+    'Planes de entrenamiento personalizados, seguimiento profesional y acompañamiento para alcanzar tus objetivos de fuerza, estética y rendimiento.'
+
+  const activeServices: ServiceItem[] =
+    Array.isArray(site?.services) && site.services.length > 0
+      ? site.services
+      : BRAND_CONFIG.services
+
+  const hasCustomTestimonials =
+    Array.isArray(site?.testimonials) && site.testimonials.length > 0
+  const activeTestimonials = hasCustomTestimonials
+    ? site!.testimonials!.map((t) => ({ ...t, isDemo: false }))
+    : BRAND_CONFIG.testimonials
+
+  const activeTrainerName = trainerData
+    ? `${trainerData.firstName} ${trainerData.lastName}`
+    : BRAND_CONFIG.trainer.fullName
+  const activeTrainerRole = trainerData?.headline || BRAND_CONFIG.trainer.role
+  const activeTrainerYears =
+    trainerData?.experienceYears ?? BRAND_CONFIG.trainer.experienceYears
+  const activeTrainerBio = trainerData?.bio || BRAND_CONFIG.trainer.bio
+  const activeTrainerPhilosophy =
+    trainerData?.philosophy || BRAND_CONFIG.trainer.philosophy
+  const activeTrainerAvatar = trainerData?.avatarUrl || '/images/coach-portrait.jpg'
+  const activeCertifications =
+    Array.isArray(trainerData?.certifications) && trainerData.certifications.length > 0
+      ? trainerData.certifications
+      : BRAND_CONFIG.trainer.certifications
+
   const activePlans =
     publicQuery.data?.plans?.length
       ? publicQuery.data.plans.map((p, idx) => ({
@@ -191,7 +242,7 @@ export function LandingPage() {
       <header className="sticky top-0 z-40 border-b border-line bg-canvas/90 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <a href="#inicio" className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand rounded-lg">
-            <BrandLogo />
+            <BrandLogo brandName={activeBrandName} tagline={activeTagline} />
           </a>
 
           <nav aria-label="Navegación principal" className="hidden items-center gap-6 lg:flex">
@@ -300,15 +351,20 @@ export function LandingPage() {
               className="z-10 lg:col-span-6"
             >
               <Badge variant="brand" className="mb-5">
-                {BRAND_CONFIG.location} · Cupos limitados
+                {activeLocation} · Cupos limitados
               </Badge>
               <h1 className="font-display text-4xl font-extrabold uppercase leading-[0.98] tracking-tight text-[#F8FAFC] sm:text-5xl lg:text-6xl">
-                Entrená con propósito.{' '}
-                <span className="text-brand">Transformá tus resultados.</span>
+                {activeHeroTitle ? (
+                  activeHeroTitle
+                ) : (
+                  <>
+                    Entrená con propósito.{' '}
+                    <span className="text-brand">Transformá tus resultados.</span>
+                  </>
+                )}
               </h1>
               <p className="mt-5 max-w-xl text-base leading-relaxed text-[#CBD5E1] sm:text-lg">
-                Planes de entrenamiento personalizados, seguimiento profesional y acompañamiento
-                para alcanzar tus objetivos de fuerza, estética y rendimiento.
+                {activeHeroSubtitle}
               </p>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -332,7 +388,7 @@ export function LandingPage() {
               <div className="mt-10 grid grid-cols-3 gap-4 border-t border-[#27313D] pt-6">
                 <div>
                   <p className="font-display text-2xl font-bold text-brand tabular-nums sm:text-3xl">
-                    +{BRAND_CONFIG.trainer.experienceYears} años
+                    +{activeTrainerYears} años
                   </p>
                   <p className="text-xs text-[#94A3B8]">Experiencia coaching</p>
                 </div>
@@ -359,14 +415,14 @@ export function LandingPage() {
             >
               <div className="relative overflow-hidden rounded-2xl border border-[#27313D] bg-[#151B23]">
                 <img
-                  src="/images/hero-fitness.jpg"
-                  alt="Entrenamiento personalizado de fuerza en estudio FITCOACH"
+                  src={activeHeroImage}
+                  alt={`Entrenamiento personalizado en ${activeBrandName}`}
                   className="aspect-[16/10] w-full object-cover lg:aspect-[4/3]"
                 />
                 <div className="absolute inset-x-0 bottom-0 flex items-center justify-between border-t border-white/10 bg-[#0B0F14]/85 px-5 py-3.5 backdrop-blur-md">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wider text-brand">
-                      Método FITCOACH
+                      Método {activeBrandName}
                     </p>
                     <p className="text-sm font-medium text-[#F8FAFC]">
                       Rutinas en tu celular + control semanal
@@ -397,8 +453,8 @@ export function LandingPage() {
           </div>
 
           <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {BRAND_CONFIG.services.map((service) => {
-              const Icon = SERVICE_ICONS[service.iconName]
+            {activeServices.map((service) => {
+              const Icon = SERVICE_ICONS[service.iconName] ?? Dumbbell
               return (
                 <Card
                   key={service.id}
@@ -494,8 +550,8 @@ export function LandingPage() {
             <div className="lg:col-span-5">
               <div className="overflow-hidden rounded-2xl border border-line bg-surface">
                 <img
-                  src="/images/coach-portrait.jpg"
-                  alt={`${BRAND_CONFIG.trainer.fullName} — ${BRAND_CONFIG.trainer.role}`}
+                  src={activeTrainerAvatar}
+                  alt={`${activeTrainerName} — ${activeTrainerRole}`}
                   className="aspect-[3/4] w-full object-cover"
                 />
               </div>
@@ -506,19 +562,19 @@ export function LandingPage() {
                 Sobre el entrenador
               </p>
               <h2 className="mt-2 font-display text-3xl font-extrabold uppercase text-ink sm:text-4xl">
-                {BRAND_CONFIG.trainer.fullName}
+                {activeTrainerName}
               </h2>
               <p className="mt-1 text-base font-semibold text-muted">
-                {BRAND_CONFIG.trainer.role} · {BRAND_CONFIG.trainer.experienceYears} años de
+                {activeTrainerRole} · {activeTrainerYears} años de
                 experiencia
               </p>
 
               <p className="mt-6 text-base leading-relaxed text-ink">
-                {BRAND_CONFIG.trainer.bio}
+                {activeTrainerBio}
               </p>
 
               <blockquote className="mt-6 rounded-xl border-l-4 border-brand bg-surface p-4 text-sm italic text-muted">
-                “{BRAND_CONFIG.trainer.philosophy}”
+                “{activeTrainerPhilosophy}”
               </blockquote>
 
               <div className="mt-6">
@@ -526,7 +582,7 @@ export function LandingPage() {
                   Formación y certificaciones
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {BRAND_CONFIG.trainer.certifications.map((cert) => (
+                  {activeCertifications.map((cert) => (
                     <Badge key={cert} variant="subtle" className="py-1 px-3">
                       <Award className="h-3.5 w-3.5 text-brand-text" aria-hidden="true" />
                       {cert}
@@ -550,11 +606,13 @@ export function LandingPage() {
                   Procesos reales, constancia medible
                 </h2>
               </div>
-              <Badge variant="warning">Ejemplos de demostración (Fase 1)</Badge>
+              {!hasCustomTestimonials && (
+                <Badge variant="warning">Ejemplos de demostración</Badge>
+              )}
             </div>
 
             <div className="mt-10 grid gap-5 md:grid-cols-3">
-              {BRAND_CONFIG.testimonials.map((item) => (
+              {activeTestimonials.map((item) => (
                 <Card key={item.id} className="flex flex-col justify-between p-6">
                   <div>
                     <div className="mb-4 flex items-center justify-between gap-2">
@@ -604,7 +662,7 @@ export function LandingPage() {
                     className="mt-1 inline-flex items-center gap-2 font-semibold text-brand-text hover:underline"
                   >
                     <MessageCircle className="h-4 w-4" aria-hidden="true" />
-                    {BRAND_CONFIG.whatsappDisplay}
+                    +{activeWhatsapp.replace(/\D/g, '')}
                   </a>
                 </div>
                 <div>
@@ -633,9 +691,7 @@ export function LandingPage() {
                       ¡Consulta recibida, {submittedLead.name}!
                     </h3>
                     <p className="mx-auto max-w-md text-sm text-muted">
-                      Vista previa de Fase 1: el formulario validó tus datos correctamente. En la
-                      Fase 2 se conectará con la base de datos para que el entrenador la gestione
-                      desde su panel.
+                      Tu mensaje ya llegó al panel del entrenador. Te responderá por WhatsApp o email a la brevedad.
                     </p>
                     <Button variant="secondary" onClick={() => setSubmittedLead(null)}>
                       Enviar otra consulta
@@ -719,9 +775,9 @@ export function LandingPage() {
 
       <footer className="border-t border-line bg-surface py-8">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 text-sm text-muted sm:flex-row sm:px-6 lg:px-8">
-          <BrandLogo />
+          <BrandLogo brandName={activeBrandName} tagline={activeTagline} />
           <p>
-            © {CURRENT_YEAR} {BRAND_CONFIG.brandName} · {BRAND_CONFIG.location}
+            © {CURRENT_YEAR} {activeBrandName} · {activeLocation}
           </p>
         </div>
       </footer>

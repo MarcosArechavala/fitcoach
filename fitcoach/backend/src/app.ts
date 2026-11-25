@@ -27,7 +27,7 @@ export function createApp() {
       credentials: true,
     }),
   )
-  app.use(express.json({ limit: '100kb' }))
+  app.use(express.json({ limit: '3mb' }))
   app.use(cookieParser())
 
   // Protección CSRF adicional por verificación de Origin en mutaciones
