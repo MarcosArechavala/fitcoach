@@ -20,6 +20,7 @@ import {
   X,
 } from 'lucide-react'
 import { BrandLogo } from '@/components/shared/BrandLogo'
+import { InstallAppBanner } from '@/components/shared/InstallAppBanner'
 import { NotificationBell } from '@/components/shared/NotificationBell'
 import { useTheme } from '@/components/shared/ThemeProvider'
 import { Button } from '@/components/ui/button'
@@ -245,6 +246,7 @@ export function TrainerLayout() {
         </header>
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
+          <InstallAppBanner />
           <Outlet />
         </main>
       </div>

@@ -1,3 +1,4 @@
+import * as React from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -21,7 +22,13 @@ type LoginFormValues = z.infer<typeof loginSchema>
 
 export function LoginPage() {
   const navigate = useNavigate()
-  const { setUser } = useAuth()
+  const { user, setUser } = useAuth()
+
+  React.useEffect(() => {
+    if (user) {
+      navigate(user.role === 'TRAINER' ? '/trainer' : '/portal', { replace: true })
+    }
+  }, [user, navigate])
 
   const {
     register,

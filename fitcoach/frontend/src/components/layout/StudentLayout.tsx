@@ -9,6 +9,7 @@ import {
   User,
 } from 'lucide-react'
 import { BrandLogo } from '@/components/shared/BrandLogo'
+import { InstallAppBanner } from '@/components/shared/InstallAppBanner'
 import { NotificationBell } from '@/components/shared/NotificationBell'
 import { useTheme } from '@/components/shared/ThemeProvider'
 import { Button } from '@/components/ui/button'
@@ -52,6 +53,7 @@ export function StudentLayout() {
 
       {/* Main mobile-first area */}
       <main className="mx-auto max-w-xl px-4 py-5">
+        <InstallAppBanner />
         <Outlet />
       </main>
 
